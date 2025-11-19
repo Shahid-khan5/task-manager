@@ -7,7 +7,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>taskmcp</ToolCommandName>
         <PackageId>TaskManagement.McpServer</PackageId>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Authors>Shahid Khan</Authors>
         <Description>Task Management MCP Server - A Model Context Protocol server for task and project management with AI agents</Description>
         <RepositoryUrl>https://github.com/Shahid-khan5/task-manager</RepositoryUrl>
