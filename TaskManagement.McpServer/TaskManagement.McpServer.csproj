@@ -21,4 +21,7 @@
     <ItemGroup>
         <ProjectReference Include="..\TaskManagement.Core\TaskManagement.Core.csproj"/>
     </ItemGroup>
+    <ItemGroup>
+        <None Include="DotnetToolSettings.xml" Pack="true" PackagePath="DotnetToolSettings.xml" />
+    </ItemGroup>
 </Project>
