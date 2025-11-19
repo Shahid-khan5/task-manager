@@ -5,11 +5,12 @@ using ModelContextProtocol.Server;
 using TaskManagement.Core.Data;
 using TaskManagement.Core.Services;
 using TaskManagement.McpServer.Tools;
+using TaskManagement.McpServer.Prompts;
 
 // Build the host application
 HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
-// Get database path from command-line argument or use current directory
+// Get database path - always use .project-management folder in user's home directory
 string dbPath;
 if (args.Length > 0 && args[0].StartsWith("--db="))
 {
@@ -17,8 +18,11 @@ if (args.Length > 0 && args[0].StartsWith("--db="))
 }
 else
 {
-    // Default to .taskmanagement.db in current directory
-    dbPath = Path.Combine(Directory.GetCurrentDirectory(), ".taskmanagement.db");
+    // Default to .project-management folder in user's home directory
+    var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    var projectManagementDir = Path.Combine(homeDirectory, ".project-management");
+    Directory.CreateDirectory(projectManagementDir);
+    dbPath = Path.Combine(projectManagementDir, "taskmanagement.db");
 }
 
 // Ensure directory exists
@@ -36,14 +40,14 @@ builder.Services.AddDbContext<TaskManagementDbContext>(options =>
     options.UseSqlite(connectionString));
 
 // Register services
-builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 
-// Register MCP server and tools
+// Register MCP server, tools, and prompts
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithPrompts<TaskPrompts>();
 
 // Build and run
 using var host = builder.Build();

@@ -14,7 +14,6 @@ namespace TaskManagement.Core.Models
     public class TaskItem
     {
         public int Id { get; set; }
-        public int ProjectId { get; set; }
         public int? ParentTaskId { get; set; } // For subtasks
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
@@ -25,7 +24,6 @@ namespace TaskManagement.Core.Models
         public DateTime? CompletedAt { get; set; }
 
         // Navigation properties
-        public Project Project { get; set; } = null!;
         public TaskItem? ParentTask { get; set; } // Parent task for subtasks
         public ICollection<TaskItem> SubTasks { get; set; } = new List<TaskItem>();
         public ICollection<TaskFile> ModifiedFiles { get; set; } = new List<TaskFile>();
@@ -34,5 +32,10 @@ namespace TaskManagement.Core.Models
         // Task dependencies
         public ICollection<TaskDependency> Dependencies { get; set; } = new List<TaskDependency>(); // Tasks that this task depends on
         public ICollection<TaskDependency> Dependents { get; set; } = new List<TaskDependency>(); // Tasks that depend on this task
+
+        // Context and history
+        public TaskContext? Context { get; set; } // Original request and conversation history
+        public ICollection<TaskIteration> Iterations { get; set; } = new List<TaskIteration>(); // Work attempts and outcomes
+        public ICollection<TaskReference> References { get; set; } = new List<TaskReference>(); // Attached images, files, links
     }
 }

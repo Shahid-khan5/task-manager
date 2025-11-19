@@ -17,9 +17,8 @@ public class TaskTools
     }
 
     [McpServerTool]
-    [Description("Creates a new task in a project with specified details.")]
+    [Description("Creates a new task with specified details.")]
     public async Task<string> CreateTask(
-        [Description("ID of the project to add the task to")] int projectId,
         [Description("Title of the task")] string title,
         [Description("Optional description of the task")] string? description = null,
         [Description("Status (NotStarted=0, InProgress=1, Completed=2, Blocked=3)")] int status = 0)
@@ -28,7 +27,6 @@ public class TaskTools
         {
             var task = new TaskItem
             {
-                ProjectId = projectId,
                 Title = title,
                 Description = description,
                 Status = (TaskStatus)status,
@@ -45,24 +43,31 @@ public class TaskTools
     }
 
     [McpServerTool]
-    [Description("Lists all tasks in a specific project.")]
-    public async Task<string> ListTasksInProject(
-        [Description("ID of the project")] int projectId)
+    [Description("Lists all tasks or filters tasks by status.")]
+    public async Task<string> ListTasks(
+        [Description("Optional status filter (NotStarted=0, InProgress=1, Completed=2, Blocked=3). If null, returns all tasks.")] int? status = null)
     {
         try
         {
-            var allTasks = await _taskService.GetAllAsync();
-            var tasks = allTasks.Where(t => t.ProjectId == projectId).ToList();
+            var allTasks = status.HasValue
+                ? await _taskService.GetByStatusAsync((TaskStatus)status.Value)
+                : await _taskService.GetByStatusAsync(null);
 
-            if (!tasks.Any())
+            if (!allTasks.Any())
             {
-                return $"No tasks found in project {projectId}.";
+                return status.HasValue
+                    ? $"No tasks found with status: {(TaskStatus)status.Value}."
+                    : "No tasks found.";
             }
 
-            var taskList = string.Join("\n", tasks.Select(t =>
+            var taskList = string.Join("\n", allTasks.Select(t =>
                 $"- [{t.Id}] {t.Title} | Status: {t.Status} | Completion: {t.CompletionPercentage}%"));
 
-            return $"Tasks in Project {projectId}:\n{taskList}";
+            var header = status.HasValue
+                ? $"Tasks with status '{(TaskStatus)status.Value}':"
+                : "All Tasks:";
+
+            return $"{header}\n{taskList}";
         }
         catch (Exception ex)
         {
@@ -99,7 +104,6 @@ public class TaskTools
                 Description: {task.Description ?? "N/A"}
                 Status: {task.Status}
                 Completion: {task.CompletionPercentage}%
-                Project ID: {task.ProjectId}
                 Created: {task.CreatedAt:yyyy-MM-dd HH:mm}
                 Completed: {task.CompletedAt?.ToString("yyyy-MM-dd HH:mm") ?? "N/A"}
                 Parent Task ID: {task.ParentTaskId?.ToString() ?? "N/A"}
@@ -121,12 +125,33 @@ public class TaskTools
     }
 
     [McpServerTool]
-    [Description("Updates an existing task's properties.")]
+    [Description("Updates task status only. Use this to mark tasks as InProgress, Completed, etc. without modifying other fields.")]
+    public async Task<string> UpdateTaskStatus(
+        [Description("ID of the task to update")] int taskId,
+        [Description("New status (NotStarted=0, InProgress=1, Completed=2, Blocked=3)")] int status)
+    {
+        try
+        {
+            var success = await _taskService.UpdateStatusAsync(taskId, (TaskStatus)status);
+            if (!success)
+            {
+                return $"Task with ID {taskId} not found.";
+            }
+
+            return $"Task {taskId} status updated to {(TaskStatus)status}.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error updating task status: {ex.Message}";
+        }
+    }
+
+    [McpServerTool]
+    [Description("Updates task title, description, or completion percentage. Does NOT update status - use UpdateTaskStatus for that.")]
     public async Task<string> UpdateTask(
         [Description("ID of the task to update")] int taskId,
         [Description("New title (optional)")] string? title = null,
         [Description("New description (optional)")] string? description = null,
-        [Description("New status (NotStarted=0, InProgress=1, Completed=2, Blocked=3, optional)")] int? status = null,
         [Description("New completion percentage 0-100 (optional)")] int? completionPercentage = null)
     {
         try
@@ -141,8 +166,6 @@ public class TaskTools
                 task.Title = title;
             if (description != null)
                 task.Description = description;
-            if (status.HasValue)
-                task.Status = (TaskStatus)status.Value;
             if (completionPercentage.HasValue)
                 task.CompletionPercentage = Math.Clamp(completionPercentage.Value, 0, 100);
 
@@ -198,75 +221,7 @@ public class TaskTools
     }
 
     [McpServerTool]
-    [Description("Removes a dependency by its ID.")]
-    public async Task<string> RemoveTaskDependency(
-        [Description("ID of the dependency to remove")] int dependencyId)
-    {
-        try
-        {
-            var removed = await _taskService.RemoveDependencyAsync(dependencyId);
-            if (removed)
-                return $"Dependency {dependencyId} removed successfully.";
-            else
-                return $"Dependency {dependencyId} not found.";
-        }
-        catch (Exception ex)
-        {
-            return $"Error removing dependency: {ex.Message}";
-        }
-    }
-
-    [McpServerTool]
     [Description("Adds a file modification record to a task.")]
-    public async Task<string> AddFileToTask(
-        [Description("ID of the task")] int taskId,
-        [Description("File path")] string filePath,
-        [Description("Optional description of changes")] string? changeDescription = null)
-    {
-        try
-        {
-            var file = new TaskFile
-            {
-                TaskId = taskId,
-                FilePath = filePath,
-                ChangeDescription = changeDescription
-            };
-            await _taskService.AddFileAsync(taskId, file);
-            return $"File '{filePath}' added to Task {taskId}";
-        }
-        catch (Exception ex)
-        {
-            return $"Error adding file: {ex.Message}";
-        }
-    }
-
-    [McpServerTool]
-    [Description("Adds an issue/blocker to a task.")]
-    public async Task<string> AddTaskIssue(
-        [Description("ID of the task")] int taskId,
-        [Description("Title of the issue")] string title,
-        [Description("Optional description of the issue")] string? description = null)
-    {
-        try
-        {
-            var issue = new TaskIssue
-            {
-                TaskId = taskId,
-                Title = title,
-                Description = description,
-                Status = IssueStatus.Open
-            };
-            await _taskService.AddIssueAsync(taskId, issue);
-            return $"Issue '{title}' added to Task {taskId}";
-        }
-        catch (Exception ex)
-        {
-            return $"Error adding issue: {ex.Message}";
-        }
-    }
-
-    [McpServerTool]
-    [Description("Creates a subtask under a parent task.")]
     public async Task<string> CreateSubTask(
         [Description("ID of the parent task")] int parentTaskId,
         [Description("Title of the subtask")] string title,
@@ -287,25 +242,6 @@ public class TaskTools
         catch (Exception ex)
         {
             return $"Error creating subtask: {ex.Message}";
-        }
-    }
-
-    [McpServerTool]
-    [Description("Checks if a task can be started based on its dependencies.")]
-    public async Task<string> CanStartTask(
-        [Description("ID of the task to check")] int taskId)
-    {
-        try
-        {
-            var canStart = await _taskService.CanStartTaskAsync(taskId);
-            if (canStart)
-                return $"Task {taskId} can be started - all dependencies are completed.";
-            else
-                return $"Task {taskId} cannot be started yet - some dependencies are not completed.";
-        }
-        catch (Exception ex)
-        {
-            return $"Error checking task: {ex.Message}";
         }
     }
 }

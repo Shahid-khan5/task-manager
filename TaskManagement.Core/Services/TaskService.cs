@@ -23,7 +23,6 @@ namespace TaskManagement.Core.Services
             return await _context.Tasks
                 .Include(t => t.ModifiedFiles)
                 .Include(t => t.Issues)
-                .Include(t => t.Project)
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
@@ -32,8 +31,22 @@ namespace TaskManagement.Core.Services
             return await _context.Tasks
                 .Include(t => t.ModifiedFiles)
                 .Include(t => t.Issues)
-                .Include(t => t.Project)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<TaskItem>> GetByStatusAsync(TaskStatus? status = null)
+        {
+            var query = _context.Tasks
+                .Include(t => t.ModifiedFiles)
+                .Include(t => t.Issues)
+                .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(t => t.Status == status.Value);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<TaskItem> CreateAsync(TaskItem task)
@@ -196,7 +209,6 @@ namespace TaskManagement.Core.Services
                 throw new InvalidOperationException($"Parent task with ID {parentTaskId} not found");
 
             subTask.ParentTaskId = parentTaskId;
-            subTask.ProjectId = parentTask.ProjectId;
             subTask.CreatedAt = DateTime.UtcNow;
             subTask.UpdatedAt = DateTime.UtcNow;
 
@@ -290,6 +302,169 @@ namespace TaskManagement.Core.Services
             }
 
             return false;
+        }
+
+        // Context management
+        public async Task<TaskContext?> GetTaskContextAsync(int taskId)
+        {
+            return await _context.TaskContexts
+                .FirstOrDefaultAsync(c => c.TaskId == taskId);
+        }
+
+        public async Task<TaskContext> SetTaskContextAsync(int taskId, string originalRequest, string? conversationHistory = null, string? additionalNotes = null)
+        {
+            var existingContext = await GetTaskContextAsync(taskId);
+            if (existingContext != null)
+            {
+                throw new InvalidOperationException($"Task {taskId} already has context. Use UpdateTaskContextAsync to modify it.");
+            }
+
+            var context = new TaskContext
+            {
+                TaskId = taskId,
+                OriginalRequest = originalRequest,
+                ConversationHistory = conversationHistory,
+                AdditionalNotes = additionalNotes,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.TaskContexts.Add(context);
+            await _context.SaveChangesAsync();
+            return context;
+        }
+
+        public async Task<TaskContext> UpdateTaskContextAsync(int taskId, string? originalRequest = null, string? conversationHistory = null, string? additionalNotes = null)
+        {
+            var context = await GetTaskContextAsync(taskId);
+            if (context == null)
+            {
+                throw new InvalidOperationException($"Task {taskId} does not have context. Use SetTaskContextAsync first.");
+            }
+
+            if (originalRequest != null)
+                context.OriginalRequest = originalRequest;
+
+            if (conversationHistory != null)
+                context.ConversationHistory = conversationHistory;
+
+            if (additionalNotes != null)
+                context.AdditionalNotes = additionalNotes;
+
+            context.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return context;
+        }
+
+        public async Task<bool> AddConversationAsync(int taskId, string question, string answer)
+        {
+            var context = await GetTaskContextAsync(taskId);
+            if (context == null)
+            {
+                return false;
+            }
+
+            var conversations = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, string>>>(context.ConversationHistory ?? "[]")
+                ?? new List<Dictionary<string, string>>();
+
+            conversations.Add(new Dictionary<string, string>
+            {
+                ["question"] = question,
+                ["answer"] = answer,
+                ["timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+            });
+
+            context.ConversationHistory = System.Text.Json.JsonSerializer.Serialize(conversations);
+            context.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // Iteration management
+        public async Task<IEnumerable<TaskIteration>> GetTaskIterationsAsync(int taskId)
+        {
+            return await _context.TaskIterations
+                .Where(i => i.TaskId == taskId)
+                .OrderBy(i => i.IterationNumber)
+                .ToListAsync();
+        }
+
+        public async Task<TaskIteration> AddIterationAsync(int taskId, string whatWasTried, IterationOutcome outcome, string? lessonsLearned = null, string? filesModified = null)
+        {
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task == null)
+            {
+                throw new InvalidOperationException($"Task {taskId} not found");
+            }
+
+            var existingIterations = await _context.TaskIterations
+                .Where(i => i.TaskId == taskId)
+                .ToListAsync();
+
+            var nextIterationNumber = existingIterations.Any()
+                ? existingIterations.Max(i => i.IterationNumber) + 1
+                : 1;
+
+            var iteration = new TaskIteration
+            {
+                TaskId = taskId,
+                IterationNumber = nextIterationNumber,
+                WhatWasTried = whatWasTried,
+                Outcome = outcome,
+                LessonsLearned = lessonsLearned,
+                FilesModified = filesModified,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.TaskIterations.Add(iteration);
+            await _context.SaveChangesAsync();
+            return iteration;
+        }
+
+        // Reference management
+        public async Task<IEnumerable<TaskReference>> GetTaskReferencesAsync(int taskId)
+        {
+            return await _context.TaskReferences
+                .Where(r => r.TaskId == taskId)
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<TaskReference> AddReferenceAsync(int taskId, ReferenceType type, string content, string description, string? originalFileName = null, string? mimeType = null)
+        {
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task == null)
+            {
+                throw new InvalidOperationException($"Task {taskId} not found");
+            }
+
+            var reference = new TaskReference
+            {
+                TaskId = taskId,
+                ReferenceType = type,
+                Content = content,
+                Description = description,
+                OriginalFileName = originalFileName,
+                MimeType = mimeType,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.TaskReferences.Add(reference);
+            await _context.SaveChangesAsync();
+            return reference;
+        }
+
+        public async Task<bool> DeleteReferenceAsync(int referenceId)
+        {
+            var reference = await _context.TaskReferences.FindAsync(referenceId);
+            if (reference == null)
+            {
+                return false;
+            }
+
+            _context.TaskReferences.Remove(reference);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

@@ -59,9 +59,34 @@ dotnet tool install --global --add-source ./nupkg TaskManagement.McpServer
 
 Keep using your current configuration with the full path to the project.
 
-## Configure for Global Use
+## Configure for Projects
 
-### For VS Code
+### Per-Project Database (Recommended)
+
+Create a `.vscode/mcp.json` file in your project root:
+
+```json
+{
+  "servers": {
+    "TaskManagementMcp": {
+      "type": "stdio",
+      "command": "taskmcp",
+      "args": ["--db=.taskmanagement.db"]
+    }
+  }
+}
+```
+
+This creates a `.taskmanagement.db` file in your project directory. Each project has its own isolated task database.
+
+**Benefits:**
+
+- ✅ No need to manage project IDs
+- ✅ Tasks are scoped to each project automatically
+- ✅ Database lives with your project
+- ✅ Easy to version control (add `.taskmanagement.db` to `.gitignore`)
+
+### Global Database (Alternative)
 
 Update `%APPDATA%\Code\User\globalStorage\github.copilot\config\mcp.json`:
 
@@ -71,13 +96,13 @@ Update `%APPDATA%\Code\User\globalStorage\github.copilot\config\mcp.json`:
     "TaskManagementMcp": {
       "type": "stdio",
       "command": "taskmcp",
-      "env": {
-        "DB_CONNECTION_STRING": "Data Source=C:\\Users\\YourUsername\\taskmanagement.db"
-      }
+      "args": ["--db=C:\\Users\\YourUsername\\taskmanagement.db"]
     }
   }
 }
 ```
+
+Or omit the `--db` argument to use `.taskmanagement.db` in the current directory.
 
 ### For Claude Desktop
 
@@ -88,23 +113,27 @@ Update `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "TaskManagementMcp": {
       "command": "taskmcp",
-      "env": {
-        "DB_CONNECTION_STRING": "Data Source=C:\\Users\\YourUsername\\taskmanagement.db"
-      }
+      "args": ["--db=C:\\Users\\YourUsername\\taskmanagement.db"]
     }
   }
 }
 ```
 
-## Database Location
+## Database Location Options
 
-Choose a permanent location for your database:
+You can specify the database location using the `--db` argument:
 
-- User profile: `C:\Users\YourUsername\taskmanagement.db`
-- Application data: `%APPDATA%\TaskManagement\taskmanagement.db`
-- Custom location of your choice
+```bash
+# Project-specific (relative path)
+--db=.taskmanagement.db
 
-Update the `DB_CONNECTION_STRING` environment variable accordingly.
+# Absolute path
+--db=C:\path\to\your\project\tasks.db
+
+# If no --db argument is provided, defaults to .taskmanagement.db in current directory
+```
+
+**Tip:** Add `.taskmanagement.db` to your `.gitignore` if using per-project databases.
 
 ## Running the Migrator
 

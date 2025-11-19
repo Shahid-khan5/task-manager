@@ -11,40 +11,14 @@ using TaskManagement.Core.Data;
 namespace TaskManagement.Core.Migrations
 {
     [DbContext(typeof(TaskManagementDbContext))]
-    [Migration("20251112114830_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251112121056_InitialWithoutProjects")]
+    partial class InitialWithoutProjects
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
-
-            modelBuilder.Entity("TaskManagement.Core.Models.Project", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Projects");
-                });
 
             modelBuilder.Entity("TaskManagement.Core.Models.TaskDependency", b =>
                 {
@@ -155,9 +129,6 @@ namespace TaskManagement.Core.Migrations
                     b.Property<int?>("ParentTaskId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
@@ -172,8 +143,6 @@ namespace TaskManagement.Core.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ParentTaskId");
-
-                    b.HasIndex("ProjectId");
 
                     b.ToTable("Tasks");
                 });
@@ -226,20 +195,7 @@ namespace TaskManagement.Core.Migrations
                         .HasForeignKey("ParentTaskId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TaskManagement.Core.Models.Project", "Project")
-                        .WithMany("Tasks")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("ParentTask");
-
-                    b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("TaskManagement.Core.Models.Project", b =>
-                {
-                    b.Navigation("Tasks");
                 });
 
             modelBuilder.Entity("TaskManagement.Core.Models.TaskItem", b =>

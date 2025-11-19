@@ -8,8 +8,11 @@
         <ToolCommandName>taskmcp</ToolCommandName>
         <PackageId>TaskManagement.McpServer</PackageId>
         <Version>1.0.0</Version>
-        <Authors>Your Name</Authors>
-        <Description>Task Management MCP Server - A Model Context Protocol server for task and project management</Description>
+        <Authors>Shahid Khan</Authors>
+        <Description>Task Management MCP Server - A Model Context Protocol server for task and project management with AI agents</Description>
+        <RepositoryUrl>https://github.com/Shahid-khan5/task-manager</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/Shahid-khan5/task-manager</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0"/>

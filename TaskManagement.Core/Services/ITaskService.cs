@@ -10,6 +10,7 @@ namespace TaskManagement.Core.Services
     {
         Task<TaskItem?> GetByIdAsync(int id);
         Task<IEnumerable<TaskItem>> GetAllAsync();
+        Task<IEnumerable<TaskItem>> GetByStatusAsync(TaskStatus? status = null);
         Task<TaskItem> CreateAsync(TaskItem task);
         Task<TaskItem?> UpdateAsync(TaskItem task);
         Task<bool> DeleteAsync(int id);
@@ -29,5 +30,20 @@ namespace TaskManagement.Core.Services
         Task<TaskDependency> AddDependencyAsync(int dependentTaskId, int dependsOnTaskId);
         Task<bool> RemoveDependencyAsync(int dependencyId);
         Task<bool> CanStartTaskAsync(int taskId);
+
+        // Context management
+        Task<TaskContext?> GetTaskContextAsync(int taskId);
+        Task<TaskContext> SetTaskContextAsync(int taskId, string originalRequest, string? conversationHistory = null, string? additionalNotes = null);
+        Task<TaskContext> UpdateTaskContextAsync(int taskId, string? originalRequest = null, string? conversationHistory = null, string? additionalNotes = null);
+        Task<bool> AddConversationAsync(int taskId, string question, string answer);
+
+        // Iteration management
+        Task<IEnumerable<TaskIteration>> GetTaskIterationsAsync(int taskId);
+        Task<TaskIteration> AddIterationAsync(int taskId, string whatWasTried, IterationOutcome outcome, string? lessonsLearned = null, string? filesModified = null);
+
+        // Reference management
+        Task<IEnumerable<TaskReference>> GetTaskReferencesAsync(int taskId);
+        Task<TaskReference> AddReferenceAsync(int taskId, ReferenceType type, string content, string description, string? originalFileName = null, string? mimeType = null);
+        Task<bool> DeleteReferenceAsync(int referenceId);
     }
 }

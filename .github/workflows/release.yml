@@ -1,0 +1,116 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'TaskManagement.Core/**'
+      - 'TaskManagement.McpServer/**'
+      - 'TaskManagement.Migrator/**'
+      - '*.sln'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Extract version from csproj
+      id: version
+      run: |
+        VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" TaskManagement.McpServer/TaskManagement.McpServer.csproj)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+    - name: Check if tag exists
+      id: check_tag
+      run: |
+        if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Pack NuGet package
+      if: steps.check_tag.outputs.exists == 'false'
+      run: dotnet pack TaskManagement.McpServer/TaskManagement.McpServer.csproj -c Release -o ./nupkg
+
+    - name: Create Release
+      if: steps.check_tag.outputs.exists == 'false'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
+        body: |
+          ## Task Management MCP Server v${{ steps.version.outputs.version }}
+          
+          ### 📦 Quick Installation
+          
+          1. **Download** the `.nupkg` file from the Assets section below
+          2. **Install** the tool:
+          
+          ```powershell
+          # Install from the downloaded file
+          dotnet tool install --global --add-source "C:\path\to\download\folder" TaskManagement.McpServer
+          ```
+          
+          3. **Configure** VS Code - Create `.vscode/mcp.json` in your project:
+          
+          ```json
+          {
+            "servers": {
+              "TaskManagementMcp": {
+                "type": "stdio",
+                "command": "taskmcp",
+                "args": ["--db=.taskmanagement.db"]
+              }
+            }
+          }
+          ```
+          
+          4. **Restart VS Code** and start using task management with GitHub Copilot!
+          
+          ### 🔄 Update Existing Installation
+          
+          ```powershell
+          # Uninstall old version
+          dotnet tool uninstall --global TaskManagement.McpServer
+          
+          # Install new version (download .nupkg first)
+          dotnet tool install --global --add-source "C:\path\to\download\folder" TaskManagement.McpServer
+          ```
+          
+          ### 📋 Requirements
+          - .NET 10 SDK or later ([Download](https://dotnet.microsoft.com/download))
+          - VS Code with GitHub Copilot extension (or Claude Desktop)
+          
+          ### 📝 What's Changed
+          - See commit history for detailed changes
+        files: |
+          nupkg/*.nupkg
+        draft: false
+        prerelease: false
+
+    - name: Skip release (tag exists)
+      if: steps.check_tag.outputs.exists == 'true'
+      run: |
+        echo "Release v${{ steps.version.outputs.version }} already exists. Update version in .csproj to create a new release."

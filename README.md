@@ -1,6 +1,44 @@
 # Task Management System
 
-A comprehensive task management system designed for AI agents to manage, track, and coordinate tasks across projects. Includes an MCP (Model Context Protocol) server for seamless AI integration.
+A comprehensive task management system designed for AI agents to manage, track, and coordinate tasks across projects. Includes an MCP (Model Context Protocol) server for seamless AI integration with GitHub Copilot and Claude Desktop.
+
+## 🚀 Quick Start
+
+### Installation
+
+1. **Clone the repository:**
+
+```powershell
+git clone https://github.com/Shahid-khan5/task-manager.git
+cd task-manager
+```
+
+2. **Run the installation script:**
+
+```powershell
+.\install.ps1
+```
+
+3. **Configure VS Code** - Create `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "TaskManagementMcp": {
+      "type": "stdio",
+      "command": "taskmcp",
+      "args": ["--db=.taskmanagement.db"]
+    }
+  }
+}
+```
+
+4. **Restart VS Code** and start using the task management tools with GitHub Copilot!
+
+### Requirements
+
+- .NET 10 SDK or later
+- VS Code with GitHub Copilot extension (or Claude Desktop)
 
 ## Project Structure
 

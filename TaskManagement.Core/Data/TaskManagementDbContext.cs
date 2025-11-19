@@ -10,30 +10,17 @@ namespace TaskManagement.Core.Data
         {
         }
 
-        public DbSet<Project> Projects { get; set; } = null!;
         public DbSet<TaskItem> Tasks { get; set; } = null!;
         public DbSet<TaskFile> TaskFiles { get; set; } = null!;
         public DbSet<TaskIssue> TaskIssues { get; set; } = null!;
         public DbSet<TaskDependency> TaskDependencies { get; set; } = null!;
+        public DbSet<TaskContext> TaskContexts { get; set; } = null!;
+        public DbSet<TaskIteration> TaskIterations { get; set; } = null!;
+        public DbSet<TaskReference> TaskReferences { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Configure Project entity
-            modelBuilder.Entity<Project>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasMaxLength(1000);
-                entity.Property(e => e.CreatedAt).IsRequired();
-                entity.Property(e => e.UpdatedAt).IsRequired();
-
-                entity.HasMany(e => e.Tasks)
-                    .WithOne(e => e.Project)
-                    .HasForeignKey(e => e.ProjectId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
 
             // Configure TaskItem entity
             modelBuilder.Entity<TaskItem>(entity =>
@@ -72,6 +59,24 @@ namespace TaskManagement.Core.Data
                     .WithOne(e => e.DependsOnTask)
                     .HasForeignKey(e => e.DependsOnTaskId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure context relationship (one-to-one)
+                entity.HasOne(e => e.Context)
+                    .WithOne(e => e.Task)
+                    .HasForeignKey<TaskContext>(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Configure iterations
+                entity.HasMany(e => e.Iterations)
+                    .WithOne(e => e.Task)
+                    .HasForeignKey(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Configure references
+                entity.HasMany(e => e.References)
+                    .WithOne(e => e.Task)
+                    .HasForeignKey(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Configure TaskFile entity
@@ -101,6 +106,41 @@ namespace TaskManagement.Core.Data
 
                 // Ensure a task cannot depend on itself
                 entity.HasIndex(e => new { e.DependentTaskId, e.DependsOnTaskId }).IsUnique();
+            });
+
+            // Configure TaskContext entity
+            modelBuilder.Entity<TaskContext>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.OriginalRequest).IsRequired();
+                entity.Property(e => e.ConversationHistory).HasColumnType("TEXT");
+                entity.Property(e => e.AdditionalNotes).HasColumnType("TEXT");
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.UpdatedAt).IsRequired();
+            });
+
+            // Configure TaskIteration entity
+            modelBuilder.Entity<TaskIteration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.IterationNumber).IsRequired();
+                entity.Property(e => e.WhatWasTried).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.Outcome).IsRequired();
+                entity.Property(e => e.LessonsLearned).HasColumnType("TEXT");
+                entity.Property(e => e.FilesModified).HasColumnType("TEXT");
+                entity.Property(e => e.CreatedAt).IsRequired();
+            });
+
+            // Configure TaskReference entity
+            modelBuilder.Entity<TaskReference>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ReferenceType).IsRequired();
+                entity.Property(e => e.Content).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.OriginalFileName).HasMaxLength(255);
+                entity.Property(e => e.MimeType).HasMaxLength(100);
+                entity.Property(e => e.CreatedAt).IsRequired();
             });
         }
     }
