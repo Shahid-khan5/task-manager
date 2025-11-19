@@ -5,11 +5,13 @@ This file tracks version changes. Update the version in `TaskManagement.McpServe
 ## How to Release a New Version
 
 1. Update the version number in `TaskManagement.McpServer/TaskManagement.McpServer.csproj`:
+
    ```xml
    <Version>1.0.1</Version>
    ```
 
 2. Commit and push to master:
+
    ```powershell
    git add .
    git commit -m "Release v1.0.1: Description of changes"
@@ -25,6 +27,7 @@ This file tracks version changes. Update the version in `TaskManagement.McpServe
 ## Version History
 
 ### v1.0.0 (Initial Release)
+
 - Task management with status tracking
 - Context and conversation history
 - Iteration tracking

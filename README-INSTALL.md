@@ -9,6 +9,7 @@ A comprehensive task management system designed for AI agents to manage, track, 
 1. **Download** the latest `.nupkg` file from [Releases](https://github.com/Shahid-khan5/task-manager/releases)
 
 2. **Install** the tool:
+
 ```powershell
 # Navigate to your Downloads folder (or wherever you saved the file)
 cd ~\Downloads
@@ -18,6 +19,7 @@ dotnet tool install --global --add-source . TaskManagement.McpServer
 ```
 
 3. **Configure** VS Code - Create `.vscode/mcp.json` in your project:
+
 ```json
 {
   "servers": {
@@ -60,6 +62,7 @@ dotnet tool install --global --add-source ~\Downloads TaskManagement.McpServer
 ### Task Management (12 Optimized Tools)
 
 **Core Operations:**
+
 - `CreateTask` - Create new tasks with title, description, and status
 - `ListTasks` - View all tasks or filter by status
 - `GetTask` - Get detailed task information
@@ -68,10 +71,12 @@ dotnet tool install --global --add-source ~\Downloads TaskManagement.McpServer
 - `DeleteTask` - Remove tasks
 
 **Advanced Features:**
+
 - `CreateSubTask` - Create subtasks under parent tasks
 - `AddTaskDependency` - Define task dependencies
 
 **Context System:**
+
 - `SetTaskContext` - Capture original requirements
 - `AddConversation` - Track Q&A during planning
 - `GetTaskContext` - Review task context
@@ -92,21 +97,25 @@ dotnet tool install --global --add-source ~\Downloads TaskManagement.McpServer
 ## 📚 Usage Examples
 
 **Create a task:**
+
 ```
 @workspace Create a task to implement user authentication
 ```
 
 **List tasks:**
+
 ```
 @workspace Show me all in-progress tasks
 ```
 
 **Update status:**
+
 ```
 @workspace Mark task 5 as completed
 ```
 
 **Add context:**
+
 ```
 @workspace Add context to task 3: User wants OAuth support with Google and GitHub
 ```
@@ -114,7 +123,9 @@ dotnet tool install --global --add-source ~\Downloads TaskManagement.McpServer
 ## 🗄️ Database Configuration
 
 ### Per-Project (Recommended)
+
 Each project gets its own `.taskmanagement.db` file:
+
 ```json
 {
   "servers": {
@@ -128,7 +139,9 @@ Each project gets its own `.taskmanagement.db` file:
 ```
 
 ### Global Database
+
 Share tasks across all projects:
+
 ```json
 {
   "servers": {
@@ -144,6 +157,7 @@ Share tasks across all projects:
 ## 🛠️ For Claude Desktop
 
 Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
